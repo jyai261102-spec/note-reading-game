@@ -105,79 +105,119 @@
     });
   }
 
-  /* ---------- SVG staff rendering ---------- */
+  /* ---------- SVG staff rendering (grand staff: treble + bass) ---------- */
   var SVGNS = "http://www.w3.org/2000/svg";
-  var STAFF_X1 = 34, STAFF_X2 = 288;
-  var NOTE_X = 232;
+  var STAFF_X1 = 34, STAFF_X2 = 300;
+  var NOTE_X = 250;
+  var STEP = 11;              // vertical px per diatonic step (line spacing = 2*STEP)
+  var TREBLE_BASE = 30;       // y of p=0 on the treble staff
+  var BASS_BASE = TREBLE_BASE + 12 * STEP; // middle C aligns perfectly (treble p=12 == bass p=0)
 
   function el(tag, attrs) {
     var e = document.createElementNS(SVGNS, tag);
     for (var k in attrs) e.setAttribute(k, attrs[k]);
     return e;
   }
+  function staffLineY(base, p) { return base + p * STEP; }
 
   function renderStaff(svg, clef, noteName) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var pos = (clef === "treble" ? TREBLE_POS : BASS_POS);
-    var p = pos[noteName];
-    var y = 40 + p * 14;
 
-    // staff lines (p = 2,4,6,8,10)
-    for (var i = 2; i <= 10; i += 2) {
-      var ly = 40 + i * 14;
+    // soft halo behind the active staff (drawn first so lines/clefs sit on top)
+    var activeBase = clef === "treble" ? TREBLE_BASE : BASS_BASE;
+    var hlTop = staffLineY(activeBase, 1.4);
+    var hlBot = staffLineY(activeBase, 10.6);
+    svg.appendChild(el("rect", {
+      x: STAFF_X1 - 4, y: hlTop, width: (STAFF_X2 - STAFF_X1) + 8, height: hlBot - hlTop,
+      fill: clef === "treble" ? "rgba(79,124,255,0.06)" : "rgba(160,107,255,0.08)",
+      rx: 8
+    }));
+
+    // grand-staff bracket: left barline spanning both staves + a curly brace
+    var gTop = staffLineY(TREBLE_BASE, 2);
+    var gBot = staffLineY(BASS_BASE, 10);
+    svg.appendChild(el("line", {
+      x1: STAFF_X1, y1: gTop, x2: STAFF_X1, y2: gBot,
+      stroke: "#7c879f", "stroke-width": 1.8, "stroke-linecap": "round"
+    }));
+    var xb = 26, mid = (gTop + gBot) / 2, ex = STAFF_X1 - 1;
+    var bracePath = "M " + ex + " " + gTop +
+      " C " + (xb + 7) + " " + gTop + " " + (xb + 3) + " " + (gTop + 34) + " " + (xb + 3) + " " + (gTop + 54) +
+      " C " + (xb + 3) + " " + (mid - 15) + " " + (xb - 3) + " " + (mid - 4) + " " + (xb - 10) + " " + mid +
+      " C " + (xb - 3) + " " + (mid + 4) + " " + (xb + 3) + " " + (mid + 15) + " " + (xb + 3) + " " + (mid + 54) +
+      " C " + (xb + 3) + " " + (gBot - 34) + " " + (xb + 7) + " " + gBot + " " + ex + " " + gBot;
+    svg.appendChild(el("path", {
+      d: bracePath, fill: "none", stroke: "#7c879f",
+      "stroke-width": 1.7, "stroke-linecap": "round", "stroke-linejoin": "round"
+    }));
+
+    // --- draw both five-line staves ---
+    function drawStaffLines(base) {
+      for (var p = 2; p <= 10; p += 2) {
+        var ly = staffLineY(base, p);
+        svg.appendChild(el("line", {
+          x1: STAFF_X1, y1: ly, x2: STAFF_X2, y2: ly,
+          stroke: "#98a1b8", "stroke-width": 1.3, "stroke-linecap": "round"
+        }));
+      }
+    }
+    drawStaffLines(TREBLE_BASE);
+    drawStaffLines(BASS_BASE);
+
+    // --- treble clef (G) : curl sits on the G4 line = p=8 ---
+    var tImg = el("image", { preserveAspectRatio: "xMidYMid meet", href: "assets/glyph_treble.png" });
+    var tH = 122, tCurlY = staffLineY(TREBLE_BASE, 8); // G4 line
+    tImg.setAttribute("x", 36);
+    tImg.setAttribute("y", (tCurlY - 0.72 * tH).toFixed(1));
+    tImg.setAttribute("height", tH);
+    tImg.setAttribute("width", (tH * 294 / 605).toFixed(1));
+    svg.appendChild(tImg);
+
+    // --- bass clef (F) : two dots straddle the F3 line = p=4 ---
+    var bImg = el("image", { preserveAspectRatio: "xMidYMid meet", href: "assets/glyph_bass.png" });
+    var bH = 92, bFY = staffLineY(BASS_BASE, 4); // F3 line
+    bImg.setAttribute("x", 36);
+    bImg.setAttribute("y", (bFY - 0.5 * bH).toFixed(1));
+    bImg.setAttribute("height", bH);
+    bImg.setAttribute("width", (bH * 318 / 324).toFixed(1));
+    svg.appendChild(bImg);
+
+    // --- which staff does the note live on ---
+    var p, y;
+    if (clef === "treble") { p = TREBLE_POS[noteName]; y = staffLineY(TREBLE_BASE, p); }
+    else { p = BASS_POS[noteName]; y = staffLineY(BASS_BASE, p); }
+
+    // --- ledger lines (only when the note is beyond the staff) ---
+    function ledger(x, yy) {
       svg.appendChild(el("line", {
-        x1: STAFF_X1, y1: ly, x2: STAFF_X2, y2: ly,
-        stroke: "#8a94ad", "stroke-width": 1.4, "stroke-linecap": "round"
+        x1: x - 20, y1: yy, x2: x + 20, y2: yy,
+        stroke: "#98a1b8", "stroke-width": 1.4, "stroke-linecap": "round"
       }));
     }
+    if (clef === "treble" && p <= 0) ledger(NOTE_X, y);      // A5 (and above)
+    if (clef === "bass" && p <= 0) ledger(NOTE_X, y);        // middle C (and above)
 
-    // clef glyph (image)
-    var clefImg = el("image", { preserveAspectRatio: "xMidYMid meet" });
-    if (clef === "treble") {
-      clefImg.setAttribute("href", "assets/glyph_treble.png");
-      clefImg.setAttribute("x", 40);
-      clefImg.setAttribute("y", 57);
-      clefImg.setAttribute("height", 132);
-      clefImg.setAttribute("width", 132 * 294 / 605);
-    } else {
-      clefImg.setAttribute("href", "assets/glyph_bass.png");
-      clefImg.setAttribute("x", 40);
-      clefImg.setAttribute("y", 66);
-      clefImg.setAttribute("height", 92);
-      clefImg.setAttribute("width", 92 * 318 / 324);
-    }
-    svg.appendChild(clefImg);
-
-    // ledger line for high A5 (p = 0) on treble
-    if (p === 0) {
-      svg.appendChild(el("line", {
-        x1: NOTE_X - 22, y1: y, x2: NOTE_X + 22, y2: y,
-        stroke: "#8a94ad", "stroke-width": 1.4, "stroke-linecap": "round"
-      }));
-    }
-
-    // stem direction: p <= 5 (upper half) -> down ; p >= 6 -> up
-    var stemUp = p >= 6;
-    var rx = 11.5;
+    // --- stem ---
+    var stemUp = p >= 6;         // notes at/below the middle line get an up-stem
+    var rx = 10.5;
     if (stemUp) {
       svg.appendChild(el("line", {
-        x1: NOTE_X + rx, y1: y - 1, x2: NOTE_X + rx, y2: y - 36,
-        stroke: "#26314a", "stroke-width": 3, "stroke-linecap": "round"
+        x1: NOTE_X + rx, y1: y - 1, x2: NOTE_X + rx, y2: y - 30,
+        stroke: "#26314a", "stroke-width": 2.6, "stroke-linecap": "round"
       }));
     } else {
       svg.appendChild(el("line", {
-        x1: NOTE_X - rx, y1: y + 1, x2: NOTE_X - rx, y2: y + 36,
-        stroke: "#26314a", "stroke-width": 3, "stroke-linecap": "round"
+        x1: NOTE_X - rx, y1: y + 1, x2: NOTE_X - rx, y2: y + 30,
+        stroke: "#26314a", "stroke-width": 2.6, "stroke-linecap": "round"
       }));
     }
 
-    // note head
-    var head = el("ellipse", {
-      cx: NOTE_X, cy: y, rx: rx, ry: 8.6,
+    // --- note head ---
+    svg.appendChild(el("ellipse", {
+      cx: NOTE_X, cy: y, rx: rx, ry: 7.8,
       fill: "#26314a",
       transform: "rotate(-18 " + NOTE_X + " " + y + ")"
-    });
-    svg.appendChild(head);
+    }));
   }
 
   /* ---------- state ---------- */
@@ -206,6 +246,33 @@
   var staffSvg = $("staffSvg"), clefBadge = $("clefBadge");
   var optionsEl = $("options"), feedbackEl = $("feedback"), nextWrap = $("nextWrap");
   var askEl = $("askText");
+  var winOverlay = $("winOverlay"), winConfetti = $("winConfetti"), winSub = $("winSub");
+
+  /* ---------- correct-answer celebration ---------- */
+  var CHEERS = ["好叻呀！", "犀利！", "答啱喇！", "好嘢！", "繼續加油！"];
+  var celebrateTimer = null, hideTimer = null;
+  function celebrate() {
+    clearTimeout(celebrateTimer); clearTimeout(hideTimer);
+    winSub.textContent = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+    winConfetti.innerHTML = "";
+    var glyphs = ["⭐", "✨", "🎵", "🌟", "💛", "🎶", "💫"];
+    for (var i = 0; i < 16; i++) {
+      var s = document.createElement("span");
+      s.textContent = glyphs[i % glyphs.length];
+      s.style.left = (4 + Math.random() * 92) + "%";
+      s.style.animationDelay = (Math.random() * 0.5).toFixed(2) + "s";
+      s.style.animationDuration = (1.1 + Math.random() * 0.9).toFixed(2) + "s";
+      s.style.fontSize = (14 + Math.random() * 16).toFixed(0) + "px";
+      winConfetti.appendChild(s);
+    }
+    winOverlay.classList.add("show");
+    winOverlay.setAttribute("aria-hidden", "false");
+    hideTimer = setTimeout(hideCelebration, 1700);
+  }
+  function hideCelebration() {
+    winOverlay.classList.remove("show");
+    winOverlay.setAttribute("aria-hidden", "true");
+  }
 
   /* ---------- start screen selection ---------- */
   var selectedClef = null, selectedCount = null;
@@ -298,7 +365,7 @@
     $("progressBar").style.width = pct + "%";
 
     // clef badge
-    clefBadge.textContent = q.clef === "treble" ? "高音 · G Clef" : "低音 · F Clef";
+    clefBadge.textContent = q.clef === "treble" ? "🎼 高音譜號 · G Clef（上面）" : "🎼 低音譜號 · F Clef（下面）";
     clefBadge.className = "clef-badge" + (q.clef === "bass" ? " bass" : "");
 
     // staff
@@ -344,8 +411,9 @@
       feedbackEl.className = "feedback good";
       feedbackEl.innerHTML = "✅ 答啱喇！呢粒係 <b>" + q.letter + q.octave + "</b>（" + SOLFEGE[q.letter] + "）";
       $("progressBar").style.width = ((state.idx + 1) / state.total) * 100 + "%";
-      // auto-advance
-      setTimeout(nextQuestion, 950);
+      // celebrate with the picture, then auto-advance
+      celebrate();
+      setTimeout(nextQuestion, 1650);
     } else {
       // wrong
       btn.classList.add("wrong");
@@ -372,6 +440,7 @@
   }
 
   function nextQuestion() {
+    hideCelebration();
     state.idx++;
     if (state.idx >= state.total) {
       showResult();
@@ -410,6 +479,7 @@
 
   /* ---------- start / replay ---------- */
   function startGame() {
+    hideCelebration();
     state.clefChoice = selectedClef;
     state.total = selectedCount;
     state.questions = generateQuestions(selectedClef, selectedCount);
@@ -430,6 +500,7 @@
 
   $("quitBtn").addEventListener("click", function () {
     if (window.confirm("確定要結束今次遊戲嗎？")) {
+      hideCelebration();
       showScreen("startScreen");
       updateCumDisplays();
     }

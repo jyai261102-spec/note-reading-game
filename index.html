@@ -71,7 +71,7 @@
 
     <div class="staff-card">
       <div class="clef-badge" id="clefBadge"></div>
-      <svg id="staffSvg" viewBox="0 0 320 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="staffSvg" viewBox="0 0 340 292" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
 
     <div class="ask" id="askText">呢粒音叫咩名？</div>
@@ -114,6 +114,18 @@
       </div>
     </div>
   </section>
+
+  <!-- ============ CORRECT-ANSWER CELEBRATION ============ -->
+  <div id="winOverlay" class="win-overlay" aria-hidden="true">
+    <div class="win-card">
+      <div class="win-badge">✅</div>
+      <div class="win-img-wrap"><img src="assets/correct.jpg" alt="答啱喇！" /></div>
+      <div class="win-text">答啱喇！</div>
+      <div class="win-sub" id="winSub">好叻呀！</div>
+      <div class="win-stars">⭐ ⭐ ⭐</div>
+    </div>
+    <div class="win-confetti" id="winConfetti"></div>
+  </div>
 
 </div>
 <script src="game.js"></script>
