@@ -441,21 +441,14 @@
     updateCumDisplays();
   });
 
-  /* ---------- lock zoom (pinch + double-tap) on touch devices ---------- */
-  // The page is designed for phones; stop children from zooming in by accident.
+  /* ---------- lock zoom on phones: block PINCH only ---------- */
+  // Double-tap zoom is already prevented by `touch-action: pan-x pan-y` in CSS.
+  // We only guard pinch here — and we let quick repeated taps through so buttons stay responsive.
   document.addEventListener("gesturestart", function (e) { e.preventDefault(); }, { passive: false });
   document.addEventListener("gesturechange", function (e) { e.preventDefault(); }, { passive: false });
   document.addEventListener("gestureend", function (e) { e.preventDefault(); }, { passive: false });
-  // pinch (2+ fingers) => block
   document.addEventListener("touchmove", function (e) {
     if (e.touches && e.touches.length > 1) e.preventDefault();
-  }, { passive: false });
-  // double-tap => block (taps on buttons still fire once, unaffected)
-  var __lastTap = 0;
-  document.addEventListener("touchend", function (e) {
-    var now = Date.now();
-    if (now - __lastTap <= 320) { e.preventDefault(); }
-    __lastTap = now;
   }, { passive: false });
 
   /* ---------- init ---------- */
