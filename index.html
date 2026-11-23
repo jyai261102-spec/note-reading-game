@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>睇譜小遊戲 · Note Reading Game</title>
+<meta name="description" content="A fun music note reading game — learn Treble (G) clef and Bass (F) clef." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎼</text></svg>" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ START SCREEN ============ -->
+  <section id="startScreen" class="screen active">
+    <div class="card start-card">
+      <div class="title-wrap">
+        <div class="notes-float">🎵</div>
+        <h1>睇譜小遊戲</h1>
+        <p class="subtitle">Note Reading Game</p>
+      </div>
+
+      <div class="score-banner">
+        <span class="star">⭐</span>
+        <span>累積答對 <b id="cumScore">0</b> 題</span>
+        <button id="resetTotalBtn" class="mini-link" title="清除累積分數">重設</button>
+      </div>
+
+      <h2 class="step-title"><span class="step-num">1</span> 揀譜號 · Choose Clef</h2>
+      <div class="clef-options" id="clefOptions">
+        <button class="clef-card" data-clef="treble">
+          <span class="clef-fig"><img src="assets/glyph_treble.png" alt="Treble clef"></span>
+          <span class="clef-name">高音譜號</span>
+          <span class="clef-en">Treble · G Clef</span>
+        </button>
+        <button class="clef-card" data-clef="bass">
+          <span class="clef-fig"><img src="assets/glyph_bass.png" alt="Bass clef"></span>
+          <span class="clef-name">低音譜號</span>
+          <span class="clef-en">Bass · F Clef</span>
+        </button>
+        <button class="clef-card" data-clef="mixed">
+          <span class="clef-fig mixed"><img src="assets/glyph_treble.png" alt=""><img src="assets/glyph_bass.png" alt=""></span>
+          <span class="clef-name">混合</span>
+          <span class="clef-en">Both · G &amp; F</span>
+        </button>
+      </div>
+
+      <h2 class="step-title"><span class="step-num">2</span> 做幾多題？ · How many?</h2>
+      <div class="count-options" id="countOptions">
+        <button class="count-btn" data-count="10">10 題</button>
+        <button class="count-btn" data-count="20">20 題</button>
+        <button class="count-btn" data-count="30">30 題</button>
+      </div>
+
+      <button id="startBtn" class="start-btn" disabled>開始 Start ▶</button>
+      <p class="hint">提示：答啱會自動去下一題；答錯會顯示正確答案，再㩒「下一題」。</p>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="gameScreen" class="screen">
+    <header class="hud">
+      <span id="qCounter">第 1 / 10 題</span>
+      <span class="hud-score">⭐ <b id="liveScore">0</b></span>
+      <button id="quitBtn" class="quit-btn" title="結束">✕</button>
+    </header>
+    <div class="progress"><div id="progressBar"></div></div>
+
+    <div class="staff-card">
+      <div class="clef-badge" id="clefBadge"></div>
+      <svg id="staffSvg" viewBox="0 0 320 300" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="ask" id="askText">呢粒音叫咩名？</div>
+    <div id="options" class="options"></div>
+
+    <div class="tools">
+      <button id="playBtn" class="play-btn">🔊 聽個音</button>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+    <div id="nextWrap" class="next-wrap"></div>
+  </section>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <section id="resultScreen" class="screen">
+    <div class="card result-card">
+      <div id="resultEmoji" class="result-emoji">🎉</div>
+      <h1 id="resultTitle">好嘢！</h1>
+      <div class="result-stats">
+        <div class="stat">
+          <div class="stat-num" id="resultScore">0 / 0</div>
+          <div class="stat-label">今次答啱</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="resultPct">0%</div>
+          <div class="stat-label">準確度</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="resultStars">⭐</div>
+          <div class="stat-label">評分</div>
+        </div>
+      </div>
+      <div class="score-banner small">
+        <span class="star">⭐</span>
+        <span>累積答對 <b id="cumScore2">0</b> 題</span>
+      </div>
+      <div class="result-btns">
+        <button id="againBtn" class="start-btn">再玩一次 🔁</button>
+        <button id="changeBtn" class="ghost-btn">改設定 ⚙️</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="game.js"></script>
+</body>
+</html>
