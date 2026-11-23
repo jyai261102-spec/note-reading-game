@@ -85,6 +85,26 @@
     lp.frequency.exponentialRampToValueAtTime(Math.max(700, freq * 3), now + 1.2);
   }
 
+  // short pleasant/unpleasant feedback tones (correct / wrong)
+  function feedbackTone(kind) {
+    var ctx = audioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    var now = ctx.currentTime;
+    var tones = kind === "correct" ? [523.25, 783.99] : [311.13, 207.65]; // C5+G5 / Eb4+Ab3
+    tones.forEach(function (f, i) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = kind === "correct" ? "sine" : "triangle";
+      o.frequency.value = f;
+      var t0 = now + i * 0.11;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + (kind === "correct" ? 0.24 : 0.34));
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0 + (kind === "correct" ? 0.3 : 0.4));
+    });
+  }
+
   /* ---------- SVG staff rendering ---------- */
   var SVGNS = "http://www.w3.org/2000/svg";
   var STAFF_X1 = 34, STAFF_X2 = 288;
@@ -252,9 +272,8 @@
       } while (note.clef + note.name === lastKey && guard < 30);
       lastKey = note.clef + note.name;
 
-      // options: correct letter + 3 distinct distractors
-      var others = shuffled(LETTERS.filter(function (L) { return L !== note.letter; })).slice(0, 3);
-      var opts = shuffled(others.concat([note.letter]));
+      // options: all 7 letters (A–G), shuffled
+      var opts = shuffled(LETTERS);
 
       qs.push({
         clef: note.clef,
@@ -308,8 +327,8 @@
     state.answered = true;
     var q = state.questions[state.idx];
 
-    // play the note so she hears the correct pitch
-    playNote(q.name);
+    // NOTE: the pitch only plays when she taps 🔊 聽個音.
+    // Answering only gives a short success / error sound cue.
 
     // disable all option buttons
     optionsEl.querySelectorAll(".opt-btn").forEach(function (b) { b.disabled = true; });
@@ -318,6 +337,7 @@
       // correct
       btn.classList.add("correct");
       state.correct++;
+      feedbackTone("correct");
       $("liveScore").textContent = state.correct;
       setCum(getCum() + 1);
       updateCumDisplays();
@@ -329,6 +349,7 @@
     } else {
       // wrong
       btn.classList.add("wrong");
+      feedbackTone("wrong");
       // reveal correct
       optionsEl.querySelectorAll(".opt-btn").forEach(function (b) {
         if (b.dataset.letter === q.letter) b.classList.add("reveal");
@@ -419,6 +440,23 @@
     showScreen("startScreen");
     updateCumDisplays();
   });
+
+  /* ---------- lock zoom (pinch + double-tap) on touch devices ---------- */
+  // The page is designed for phones; stop children from zooming in by accident.
+  document.addEventListener("gesturestart", function (e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener("gesturechange", function (e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener("gestureend", function (e) { e.preventDefault(); }, { passive: false });
+  // pinch (2+ fingers) => block
+  document.addEventListener("touchmove", function (e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  // double-tap => block (taps on buttons still fire once, unaffected)
+  var __lastTap = 0;
+  document.addEventListener("touchend", function (e) {
+    var now = Date.now();
+    if (now - __lastTap <= 320) { e.preventDefault(); }
+    __lastTap = now;
+  }, { passive: false });
 
   /* ---------- init ---------- */
   updateCumDisplays();
